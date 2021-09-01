@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  pub:
+    container_name: 'pub-mqtt'
+    image: lorisleiva/laravel-docker:8.0
+    networks:
+      - main
+    environment:
+      PS1: "\\[\\e[1;34m\\]\\w \\[\\e[0;35m\\]\\$$\\[\\e[m\\] "
+    command: php client-mqtt.php
+    volumes:
+      - .:/app
+    working_dir: /app
+    depends_on:
+      - broker
+  broker:
+    build: .
+    container_name: "broker-mqtt"
+    image: node:14
+    restart: always
+    command: nodemon app.js
+    networks:
+      - main
+    environment:
+      # color prompt
+      PS1: "\\[\\e[1;34m\\]\\w \\[\\e[0;35m\\]\\$$\\[\\e[m\\] "
+    ports:
+      - "1883:1883"
+      - "1884:1884"
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    working_dir: /app
+  sub:
+    build: .
+    container_name: "sub-mqtt"
+    image: node:14
+    restart: always
+    command: nodemon mqtt-client.js
+    networks:
+      - main
+    depends_on:
+      - broker
+    volumes:
+      - .:/app
+    working_dir: /app
+  db:
+    image: mongo
+    container_name: "mongo-mqtt"
+    ports:
+      - "27017:27017"
+    networks:
+      - main
+    logging:
+      driver: none
+  redis:
+    image: redis
+    container_name: "cache-mqtt"
+    ports:
+      - "6379:6379"
+    networks:
+      - main
+    logging:
+      driver: none
+
+
+networks:
+  main:
